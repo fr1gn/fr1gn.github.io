@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Philosophy Quiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* A little extra style for transitions */
+        .screen {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .hidden {
+            display: none;
+            opacity: 0;
+        }
+        .visible {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
+
+    <div class="bg-white p-8 sm:p-12 rounded-xl shadow-2xl w-full max-w-3xl min-h-[400px] flex flex-col justify-center">
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen visible text-center">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">Философский квиз</h1>
+            <p class="text-lg text-gray-600 mb-8">
+                Добро пожаловать! Этот квиз разделен на 5 блоков. Вы должны правильно ответить на все вопросы в блоке, чтобы перейти к следующему. Если вы ошибетесь, вам нужно будет пройти "работу над ошибками" и ответить на неверные вопросы, пока не ответите на все правильно.
+            </p>
+            <button id="start-quiz-btn" class="w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
+                Начать квиз (Блок 1)
+            </button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="screen hidden">
+            <div id="progress-text" class="text-sm font-semibold text-gray-500 mb-2"></div>
+            <h2 id="question-text" class="text-2xl font-semibold text-gray-900 mb-6 min-h-[100px]"></h2>
+            <div id="options-container" class="grid grid-cols-1 gap-4">
+                <!-- Options will be injected here -->
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen hidden text-center">
+            <h2 id="results-title" class="text-3xl font-bold text-gray-800 mb-4"></h2>
+            <p id="results-message" class="text-lg text-gray-600 mb-8"></p>
+            <button id="results-next-btn" class="w-full bg-green-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-green-700 transition-all duration-300 transform hover:scale-105">
+                <!-- Button text will be set dynamically -->
+            </button>
+        </div>
+
+    </div>
+
+    <script type="module">
+        // --- 1. ALL QUESTION DATA ---
+        // All 93 questions parsed into a JavaScript array
+        const allQuestions = [
+            { question: "The ancient Greek philosopher Pythagoras stated:", options: ["All things are similar in number", "War is the father of everything and the mother of everything", "Know thyself", "I know that I don't know anything", "Everything flows, everything changes"], answer: 0 },
+            { question: "The ethical concept of Confucianism, identifying the positive qualities of a person:", options: ["a noble person", "short man", "an official", "warlord", "statesman"], answer: 0 },
+            { question: "Representative of the Milesian school:", options: ["Socrates", "Democritus", "Heraclitus", "Diogenes", "Thales"], answer: 4 },
+            { question: "Created the heliocentric system:", options: ["Nicolaus Copernicus", "Giordano Bruno", "Nicholas of Cusa", "Galileo Galilei", "Tycho Brahe"], answer: 0 },
+            { question: "Recognition of the plurality of substance:", options: ["monism", "Pluralism", "dualism", "Deism", "Rationalism"], answer: 1 },
+            { question: "The sphere of philosophical knowledge about human being:", options: ["Anthropology", "epistemology", "axiology", "ontology", "logic"], answer: 0 },
+            { question: "An ancient philosopher who believed that the material world consists of atoms:", options: ["Aristotle", "Pyrrho", "Zeno", "Democritus", "Heraclitus"], answer: 3 },
+            { question: "Author of the doctrine of the four truths:", options: ["Siddhartha Gautama", "Confucius", "Patanjali", "Lao Tzu", "Mahavira"], answer: 0 },
+            { question: "Adam Bol - the principle first proclaimed:", options: ["Baitursynov", "Sh. Kudaiberdiev", "Sh. Ualikhanov", "Bukeikhanov", "A. Kunanbaev"], answer: 4 },
+            { question: "Indicate the law of dialectics:", options: ["the law of gravity", "Law of conservation of matter and energy", "the law of the excluded middle", "The law of unity and struggle of opposites", "Law of Sufficient Reason"], answer: 3 },
+            { question: "Mayeutics is:", options: ["The ability to cleverly debate", "The art of having a conversation, an argument", "Socratic method of finding the truth", "The ideal of physical and moral perfection", "The beginning of being"], answer: 2 },
+            { question: "Man is the measure of all things - believes:", options: ["Parmenides", "Protagoras", "Socrates", "Democritus", "Plato"], answer: 1 },
+            { question: "Basic laws and categories of formal logic discovered:", options: ["Socrates", "Empedocles", "Aristotle", "Plato", "Plotinus"], answer: 2 },
+            { question: "Forms of worldview", options: ["Consciousness, thinking, mind", "Myth, religion, philosophy", "God, nature, society", "Ontology, epistemology, axiology", "Man, person, individual"], answer: 1 },
+            { question: "Know yourself - said:", options: ["Confucius", "Heraclitus", "Protagoras", "Parmenides", "Socrates"], answer: 4 },
+            { question: "Philosopher and theologian who put forward five proofs for the existence of God:", options: ["Aurelius Augustine", "William of Ockham", "Roger Bacon", "Thomas Aquinas", "Anselm of Canterbury"], answer: 3 },
+            { question: "Who was called the 'Second Teacher' in world philosophy:", options: ["Al-Ghazali", "Al-Farabi", "Al-Biruni", "Al-Khwarizmi", "Al-Kindi"], answer: 1 },
+            { question: "Philosophical direction, recognizing one beginning of the world:", options: ["dualism", "Agnosticism", "mechanism", "Monism", "Pluralism"], answer: 3 },
+            { question: "Invisible, omnipresent law of nature, society, human behavior and thinking, the path:", options: ["Lee", "Fa", "Siao", "Zhen", "Tao"], answer: 4 },
+            { question: "The third law of dialectics:", options: ["the law of gravity", "Law of conservation of matter and energy", "The law of the excluded middle", "Law of sufficient reason", "The law of negation of negation"], answer: 4 },
+            { question: "Philosophical doctrine that denies the fundamental possibility of knowing the world:", options: ["skepticism", "Agnosticism", "sensationalism", "Anthropologism", "Atheism"], answer: 1 },
+            { question: "A thinker who claims that a philosopher should be at the head of the state:", options: ["Aristotle", "Democritus", "Heraclitus", "Epicurus.", "Plato"], answer: 4 },
+            { question: "What is the meaning of the term Philosophy?", options: ["Love of wisdom", "Love of Idea", "Love of thinking", "Love of Science", "Love of Truth"], answer: 0 },
+            { question: "The first form of worldview:", options: ["Religion", "Myth", "Philosophy", "Art", "morality"], answer: 1 },
+            { question: "A philosophical method based on decomposition phenomenon into its constituent parts and sides:", options: ["Analysis", "Synthesis", "Dialectic", "Metaphysics", "Eclecticism"], answer: 0 },
+            { question: "A philosophical method based on the consideration of things, and processes from two opposite points of view", options: ["Analysis", "Synthesis", "Dialectics", "Metaphysics", "Eclecticism"], answer: 2 },
+            { question: "Meaning of Taoist principle 'Wu-wei'", options: ["Non-resistance to evil", "Action", "Discipline and order in society", "Non-action", "Infinity of the Universe"], answer: 3 },
+            { question: "Teachings about Being:", options: ["Epistemology", "Axiology", "Anthology", "Anthropology", "Ontology"], answer: 4 },
+            { question: "What philosophical direction “Space and time are forms of our perception” belong to:", options: ["Materialism", "Objective idealism", "Subjective idealism", "dialectical materialism", "mechanistic materialism"], answer: 2 },
+            { question: "Two main parts of philosophy:", options: ["Sophistry, eclecticism, dogmatism", "Monism, dualism, pluralism", "Sociology, political science, cultural studies", "Ontology, Gnoseology", "Mythology, religion, philosophy"], answer: 3 },
+            { question: "Author of Utopia.", options: ["T. More", "T. Campanella", "N. Machiavelli", "J. Bruno", "N. Copernicus"], answer: 0 },
+            { question: "Teaching about knowledge:", options: ["ontology", "Gnoseology", "metaphysics", "Axiology", "Anthropology"], answer: 1 },
+            { question: "Recognition of two substances at the foundation of being:", options: ["Pluralism", "Dualism", "Monism", "Conventionalism", "Parallelism"], answer: 1 },
+            { question: "An outstanding representative of medieval scholasticism:", options: ["Al-Kindi", "Aurelius Augustine", "Thomas Aquinas", "Ibn Sina", "Al-Farabi"], answer: 2 },
+            { question: "Founder of Taoism:", options: ["Confucius", "Lao Tzu", "Shang Di", "Mencius", "Huang Di"], answer: 1 },
+            { question: "What does humanism mean?", options: ["philanthropy", "love for god", "love for knowledge", "love of wisdom", "love for truth"], answer: 0 },
+            { question: "What is the principle of 'Siao'", options: ["philanthropy", "etiquette", "energy", "servility", "Respect for elders"], answer: 4 },
+            { question: "What does Maya mean", options: ["Illusion", "rebirth of souls", "fate", "action", "practice"], answer: 0 },
+            { question: "What does Buddha mean in Sanskrit?", options: ["Dark", "Smart", "Enlightened", "Universal", "Statue"], answer: 2 },
+            { question: "Which is the branch of philosophy that studies issues concerning art and beauty?", options: ["Aesthetics", "Epistemology", "Logic", "Metaphysics", "Moral"], answer: 0 },
+            { question: "«Wu-Wei», means something like", options: ["non-action", "action", "the virtue", "moral disposition to do good", "the ability to see what is right and wrong"], answer: 0 },
+            { question: "In the schools of Indian philosophical thought what means action", options: ["Karma", "Dharma", "Samsara", "Reincarnation", "Nirvana"], answer: 0 },
+            { question: "Before the Islam important role in the spiritual culture of Qazaq, there is….", options: ["Sufism", "Tribalism", "Anarchism", "Hedonism", "Tengrism"], answer: 4 },
+            { question: "Who said that “Love and justice as the attributes of God.”", options: ["Abai", "Comte", "Kierkegaard", "Nietzsche", "James"], answer: 0 },
+            { question: "What does the Greek word “Logos” mean?", options: ["science", "goal", "religion", "idea", "subject"], answer: 0 },
+            { question: "is something that can be said to exist", options: ["Knowledge", "Category", "Being", "Notion", "Space"], answer: 2 },
+            { question: "is the branch of philosophy that studies the nature of Being", options: ["Ontology", "Neoplatonism", "Metaphysics", "Dualism", "Epistemology"], answer: 0 },
+            { question: "The ability to create mental images or pictures is called …", options: ["imagination", "perception", "reflection", "consciousness", "will"], answer: 0 },
+            { question: "What is common between myth, religion and philosophy:", options: ["reflection", "world outlook", "scientific approach", "rationalism", "agnosticism"], answer: 1 },
+            { question: "In Hinduism, the absolute reality is designated by the concept:", options: ["atman", "moksha", "jina", "Brahman", "ahimsa"], answer: 3 },
+            { question: "In Daoism adherence to the principle of “naturalness” means", options: ["following to the Dao as the law of nature and cosmos", "following to your own needs", "transforming the outer world for the better", "implementing the principle of love for the neighbor", "faith in God"], answer: 0 },
+            { question: "Author of the “double-truth” theory:", options: ["Ibn-Sina", "Ibn-Rushd", "Al-Kindi", "Ibn-Arabi", "Al-Ghazali"], answer: 3 },
+            { question: "The author of the expression: “thought and being are one and the same”", options: ["Plato", "Pythagoras", "Heraclitus", "Aristotle", "Parmenides"], answer: 4 },
+            { question: "Ancient Greek philosophers, who took money for teaching wisdom:", options: ["atomists", "representatives of Peripatetic school", "sophists", "Socratics", "all Ancient Greek thinkers"], answer: 2 },
+            { question: "“Knowledge comes only or primarily from sensory experience”:", options: ["skepticism", "rationalism", "agnosticism", "phenomenology", "empiricism"], answer: 4 },
+            { question: "Transition from the general to the specific knowledge:", options: ["induction", "analysis", "deduction", "abstracting", "synthesis"], answer: 2 },
+            { question: "Protagoras is the author of remark:", options: ["man is the measure of all things", "man is a social animal", "man is a bizarre creature", "man is a superman", "man is a political animal"], answer: 0 },
+            { question: "Suffering and evil deal with:", options: ["ahimsa", "nirvana", "Brahmin", "moksha", "samsara"], answer: 4 },
+            { question: "“Don’t harm the living, sentient beings” is the commandment of:", options: ["ahimsa", "moksha", "samsara", "karma", "nirvana"], answer: 0 },
+            { question: "“Motion is unthinkable” – assumed:", options: ["Thales", "Heraclitus of Ephesus", "Zeno of Elea", "Diogenes of Sinope", "Pythagoras of Samos"], answer: 2 },
+            { question: "“Maieutics” is the method of:", options: ["Plato", "Protagoras", "Socrates", "Zeno", "Heraclitus"], answer: 2 },
+            { question: "According to Parmenides, being is:", options: ["eternal, invariable, united", "ideal, eternal, multiple", "the unity of the spiritual and material", "material, variable, ultimate", "invariable, plural"], answer: 0 },
+            { question: "According to al-Farabi, the ideal of society:", options: ["city of the sun", "city of panic", "virtuous city", "city of ambition", "city of freedom and collectivity"], answer: 2 },
+            { question: "Rational knowledge includes:", options: ["concept, judgment, conclusion", "analogy, hypothesis, ordering", "induction, deduction generalization", "intuition, reason, mind", "sensation, perception, representation"], answer: 0 },
+            { question: "In ancient Greek philosophy, the impossibility of think about motion has been proven in:", options: ["Aristotelian syllogisms", "Zeno’s paradoxes", "Pythagorean proves", "Socrates’ definitions", "Plato's dialogues"], answer: 1 },
+            { question: "Materialistic school in ancient Indian philosophy:", options: ["Charvaka", "Buddhism", "Yoga", "Upanishads", "Jainism"], answer: 0 },
+            { question: "“Cognition is the recollection of the ideas that soul had once beheld”, affirms:", options: ["Epicurus", "Aristotle", "Plato", "Socrates", "Pythagoras"], answer: 2 },
+            { question: "In Hellenistic philosophy the word “ataraxia” means:", options: ["equanimity, impassivity", "heartlessness", "fatigue, tiredness", "wisdom", "activity and creativity"], answer: 0 },
+            { question: "In ancient times the concept “physis” meant:", options: ["nature", "society", "psyche", "state", "human being"], answer: 0 },
+            { question: "To the question: 'What is difficult?' Thales replied:", options: ["to know God", "to know thyself", "to give advices to others", "to know the essence of things", "to overcome the need"], answer: 1 },
+            { question: "Any change, transformation, and process is:", options: ["motion", "evolution", "involution", "development", "progress"], answer: 3 },
+            { question: "Category, reflecting the external, sensibly perceived sides of objects and processes:", options: ["phenomenon", "image", "configuration", "profile", "shape"], answer: 0 },
+            { question: "The negation of the causality principle:", options: ["determinism", "agnosticism", "indeterminism", "fatalism", "idealism"], answer: 2 },
+            { question: "The science on forms, laws and ways of thinking:", options: ["logic", "axiology", "ontology", "epistemology", "logistics"], answer: 0 },
+            { question: "'Everything flows', there is nothing constant in the universe, considered:", options: ["Thales", "Anaximander", "Democritus", "Heraclitus", "Protagoras"], answer: 3 },
+            { question: "The expression “One cannot enter into the same river even once” is…", options: ["relativism", "sophism", "skepticism", "pessimism", "agnosticism"], answer: 0 },
+            { question: "The form of empirical cognition:", options: ["judgment", "hypothesis", "observation", "syllogism", "theory"], answer: 2 },
+            { question: "The basis for regulation of human behavior, according to legalism:", options: ["cruel laws", "custom", "tradition", "ritual", "morality"], answer: 0 },
+            { question: "The expression “Everything I say is false” is…", options: ["truth", "sophism", "wordplay", "deception", "error"], answer: 1 },
+            { question: "School of thought that questions the possibility of certainty in knowledge:", options: ["skepticism", "pessimism", "optimism", "realism", "nominalism"], answer: 0 },
+            { question: "Ancient philosopher, who recognized water, earth, fire and air as a system of world’s eternal elements and forces:", options: ["Epicurus", "Empedocles", "Anaximenes", "Anaximander", "Heraclitus"], answer: 1 },
+            { question: "Which Pre-Socratic philosopher claimed everything was made of atoms?", options: ["Parmenides", "Thales", "Pythagoras", "Democritus", "Heraclitus"], answer: 3 },
+            { question: "What is the translation of the word “religio” from Latin?", options: ["bind, connect", "person", "faith, cult", "worshiping", "idol"], answer: 0 },
+            { question: "According to .. all phenomena in the world are planned in advance and the possibility of change is rejected", options: ["fatalism", "determinism", "formalism", "indeterminism", "providentialism"], answer: 0 },
+            { question: "Christian world outlook stands for the idea of creation of the world out of nothing. It is …..", options: ["Theocentrism", "Faith", "Spirituality", "Symbolism", "Creationism"], answer: 4 },
+            { question: "The belief that God is present in all things of nature", options: ["Pantheism", "Syncretism", "Animism", "Theology", "Anthropology"], answer: 0 },
+            { question: "View that after the death the human beings live again in other forms. What is this?", options: ["Reincarnation", "Fetishism", "Animism", "Religion", "Syncretism"], answer: 0 },
+            { question: "is the belief in and worship of controlling power,", options: ["Religion", "Culture", "Science", "Art", "Game"], answer: 0 }
+        ];
+
+        // --- 2. APP STATE ---
+        let blocks = [];
+        let currentBlockIndex = 0;
+        let questionsForThisRound = [];
+        let currentQuestionIndex = 0;
+        let userAnswers = []; // To store answers for the current round
+
+        // --- 3. UI ELEMENTS ---
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const startBtn = document.getElementById('start-quiz-btn');
+        const progressText = document.getElementById('progress-text');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsMessage = document.getElementById('results-message');
+        const resultsNextBtn = document.getElementById('results-next-btn');
+
+        // --- 4. CORE LOGIC ---
+
+        /**
+         * Helper function to switch between screens
+         */
+        function showScreen(screenId) {
+            // Hide all screens
+            [startScreen, quizScreen, resultsScreen].forEach(screen => {
+                screen.classList.remove('visible');
+                screen.classList.add('hidden');
+            });
+
+            // Show the target screen
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) {
+                targetScreen.classList.remove('hidden');
+                targetScreen.classList.add('visible');
+            }
+        }
+
+        /**
+         * Starts a new block (or error correction round)
+         */
+        function startBlock(blockIndex) {
+            currentBlockIndex = blockIndex;
+            // Start with all questions for this block
+            questionsForThisRound = [...blocks[currentBlockIndex]]; 
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            
+            showScreen('quiz-screen');
+            displayQuestion();
+        }
+
+        /**
+         * Starts the "error correction" round with only incorrect questions
+         */
+        function startErrorCorrection() {
+            // Get the list of incorrect questions from the last round
+            const incorrectQuestions = userAnswers
+                .filter(answer => !answer.isCorrect)
+                .map(answer => answer.question);
+
+            questionsForThisRound = incorrectQuestions;
+            currentQuestionIndex = 0;
+            userAnswers = []; // Reset answers for the new round
+            
+            showScreen('quiz-screen');
+            displayQuestion();
+        }
+
+        /**
+         * Displays the current question and its options
+         */
+        function displayQuestion() {
+            if (currentQuestionIndex >= questionsForThisRound.length) {
+                // End of the round, show results
+                showResults();
+                return;
+            }
+
+            const q = questionsForThisRound[currentQuestionIndex];
+            
+            // Update progress text
+            progressText.innerText = `Блок ${currentBlockIndex + 1} | Вопрос ${currentQuestionIndex + 1} из ${questionsForThisRound.length}`;
+            
+            // Update question text
+            questionText.innerText = q.question;
+
+            // Clear old options
+            optionsContainer.innerHTML = '';
+
+            // Create and add new option buttons
+            q.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerText = `${String.fromCharCode(65 + index)}) ${option}`; // A) Option, B) Option...
+                button.className = "w-full p-4 border border-gray-300 rounded-lg text-left text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200";
+                button.dataset.index = index; // Add index as data attribute
+                button.onclick = () => handleAnswer(index);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        /**
+         * Handles the user's answer selection
+         */
+        function handleAnswer(selectedOptionIndex) {
+            const q = questionsForThisRound[currentQuestionIndex];
+            const isCorrect = (selectedOptionIndex === q.answer);
+            
+            // Store the result
+            userAnswers.push({
+                question: q,
+                selected: selectedOptionIndex,
+                isCorrect: isCorrect
+            });
+
+            const buttons = optionsContainer.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.disabled = true;
+                const index = parseInt(button.dataset.index, 10);
+
+                // Remove hover/focus styles
+                button.className = button.className.replace('hover:bg-gray-100', '').replace('focus:outline-none focus:ring-2 focus:ring-blue-500', '');
+
+                if (index === q.answer) {
+                    // Correct answer
+                    button.classList.add('bg-green-100', 'border-green-400', 'ring-2', 'ring-green-300');
+                } else if (index === selectedOptionIndex) {
+                    // User's wrong selection
+                    button.classList.add('bg-red-100', 'border-red-400', 'ring-2', 'ring-red-300');
+                } else {
+                    // Other incorrect options
+                    button.classList.add('opacity-60');
+                }
+            });
+
+            // Add a "Next" button
+            const nextButton = document.createElement('button');
+            nextButton.innerText = "Далее →";
+            nextButton.className = "w-full bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg hover:bg-blue-700 transition-all duration-300 mt-6";
+            nextButton.onclick = () => {
+                currentQuestionIndex++;
+                displayQuestion(); // This will clear the container and show the next question
+            };
+            optionsContainer.appendChild(nextButton);
+        }
+
+        /**
+         * Shows the results after a round is completed
+         */
+        function showResults() {
+            let correctCount = 0;
+            let incorrectCount = 0;
+
+            userAnswers.forEach(answer => {
+                if (answer.isCorrect) {
+                    correctCount++;
+                } else {
+                    incorrectCount++;
+                }
+            });
+
+            showScreen('results-screen');
+
+            if (incorrectCount === 0) {
+                // --- MASTERED THE BLOCK ---
+                resultsTitle.innerText = `Блок ${currentBlockIndex + 1} пройден!`;
+                resultsMessage.innerText = `Отлично! Вы правильно ответили на все ${correctCount} вопросов.`;
+                resultsNextBtn.className = "w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105";
+
+
+                if (currentBlockIndex < blocks.length - 1) {
+                    // More blocks left
+                    resultsNextBtn.innerText = `Перейти к Блоку ${currentBlockIndex + 2}`;
+                    resultsNextBtn.onclick = () => startBlock(currentBlockIndex + 1);
+                } else {
+                    // Last block completed
+                    resultsTitle.innerText = `Квиз завершен!`;
+                    resultsMessage.innerText = `Поздравляем! Вы успешно прошли все ${blocks.length} блоков!`;
+                    resultsNextBtn.innerText = "Начать заново";
+                    resultsNextBtn.onclick = () => {
+                        showScreen('start-screen');
+                        startBtn.innerText = "Начать квиз (Блок 1)";
+                        startBtn.onclick = () => startBlock(0);
+                    };
+                }
+
+            } else {
+                // --- ERROR CORRECTION NEEDED ---
+                resultsTitle.innerText = `Работа над ошибками (Блок ${currentBlockIndex + 1})`;
+                resultsMessage.innerText = `Вы ответили правильно на ${correctCount} из ${userAnswers.length} вопросов. Вам нужно исправить ${incorrectCount} ошибок.`;
+                resultsNextBtn.innerText = "Начать работу над ошибками";
+                resultsNextBtn.className = "w-full bg-orange-500 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-orange-600 transition-all duration-300 transform hover:scale-105";
+                resultsNextBtn.onclick = startErrorCorrection;
+            }
+        }
+
+        /**
+         * Initializes the application
+         */
+        function init() {
+            // Split all questions into 5 blocks
+            const blockSize = 20;
+            for (let i = 0; i < allQuestions.length; i += blockSize) {
+                blocks.push(allQuestions.slice(i, i + blockSize));
+            }
+            
+            // Setup the initial start button
+            startBtn.onclick = () => startBlock(0);
+        }
+
+        // --- 5. START THE APP ---
+        init();
+
+    </script>
+</body>
+</html>
